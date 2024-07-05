@@ -187,36 +187,7 @@ class DecoderVELOVI(nn.Module):
         return px_pi_up, px_pi_down, px_rho
 
 
-# VAE model
 class VELOVAE(BaseModuleClass):
-    """
-    Variational auto-encoder model.
-
-    This is an implementation of the scVI model descibed in [Lopez18]_
-
-    Parameters
-    ----------
-    n_input
-        Number of input genes
-    n_hidden
-        Number of nodes per hidden layer
-    n_latent
-        Dimensionality of the latent space
-    n_layers
-        Number of hidden layers used for encoder and decoder NNs
-    dropout_rate
-        Dropout rate for neural networks
-    latent_distribution
-        One of
-
-        * ``'normal'`` - Isotropic normal
-        * ``'ln'`` - Logistic normal with normal params N(0, 1)
-    use_layer_norm
-        Whether to use layer norm in layers
-    var_activation
-        Callable used to ensure positivity of the variational distributions' variance.
-        When `None`, defaults to `torch.exp`.
-    """
 
     def __init__(
         self,
@@ -248,6 +219,72 @@ class VELOVAE(BaseModuleClass):
         flexible_switch_time: bool = True,
         shared_time: bool = True,
     ):
+        """
+        Parameters
+        ----------
+        n_input
+            Number of input genes.
+        n_dim_glue
+            Dimension of used representation for encoder input.
+        upper_ss_prot
+            Median expression of upper 1% percentile of proteins.
+        lower_ss_prot
+            Median expression of lower 1% percentile of proteins.
+        upper_ss_rna
+            Median expression of upper 1% percentile of rnas.
+        lower_ss_rna
+            Median expression of lower 1% percentile of rnas.
+        dpt_start_rna
+            (Optional) Median rna expression of cells within lower 1% percentile wrt pseudotime.
+        dpt_start_prot
+            (Optional) Median protein expression of cells within lower 1% percentile wrt pseudotime.
+        n_hidden
+            Number of nodes per hidden layer.
+        n_latent
+            Dimensionality of the latent space.
+        n_layers
+            Number of hidden layers used for encoder and decoder NNs.
+        dropout_rate
+            Dropout rate for neural networks.
+        latent_distribution
+            One of
+
+            * ``'normal'`` - Isotropic normal
+            * ``'ln'`` - Logistic normal with normal params N(0, 1)
+        use_batch_norm
+            Whether to use batch norm in layers.
+        use_layer_norm
+            Whether to use layer norm in layers.
+        var_activation
+            Callable used to ensure positivity of the variational distributions' variance.
+            When `None`, defaults to `torch.exp`.
+        model_steady_states
+            If 'True', per cell a variable is learned to decide whether that cell is in steady state or dynamic state.
+            Otherwise all cells are in dynamic state.
+        penalty_scale
+            Loss weighting factor to encourage initial states to be close to upper or lower 1% percentile of the data
+            or start expression determined via pseudotime prior.
+        param_loss_weight
+            Loss weighting factor to enforce (!) restrictions on parameters.
+        kl_scaling
+            Loss weighting factor for KL loss on gene states (activation vs repression).
+        kl_z_scaling
+            Loss weighting factor for KL loss on latent space.
+        kl_ss_scaling
+            Loss weighting factor for KL loss on cell states (steady state vs dynamic state).
+        time_loss_weight
+            Loss weighting factor for time prior.
+        dirichlet_concentration
+            Dirichlet concentrations used as prior on gene and cell states.
+        linear_decoder
+            Whether to use a linear decoder or not.
+        flexible_switch_time
+            If 'True', per gene a time point is learned where cells switch from steady to dynamic state. In the repression
+            case, this switch point can also be negative such that the unobserved switch point from activation to repression
+            doesn't coincide with the observed initial state of repression. Important when time is shared between genes.
+        shared_time
+            Whether time is shared across genes or fitted individually for every gene.
+        """
         super().__init__()
         self.n_latent = n_latent
         self.latent_distribution = latent_distribution

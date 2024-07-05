@@ -16,6 +16,32 @@ def pair_data(
         log_fc_prot=.1,
         log_fc_rna=.5,
 ):
+    """
+    Create computationally paired data by interpolating the missing modality over an integrated neighborhood graph.
+
+    Parameters
+    ----------
+    data_path
+        Path where protein and rna expression data are stored.
+    data_path_out
+        Path to save the paired adata objects.
+    combined
+        Adata object containing an integrated neighborhood graph of the protein and rna cells.
+    cluster_list
+        List of leiden clusters to which the cells of both modalities are subsetted.
+    file_name
+        Name for the resulting data files.
+    fractions
+        Fraction of top and bottom cells wrt pseudotime considered for differential expression testing.
+    n_cells
+        Number of cells to be drawn from the selected subsets of 'early' and 'late' cells wrt pseudotime for
+        differential expression testing.
+    log_fc_prot
+        Log fold-change cutoff for protein differential testing.
+    log_fc_rna
+        Log fold-change cutoff for rna differential testing.
+    """
+
     prot = sc.read_h5ad(f'{data_path}hBM_prot.h5ad')
     rna = sc.read_h5ad(f'{data_path}hBM_rna.h5ad')
 
@@ -123,9 +149,9 @@ def pair_data(
     paired_adata = sc.AnnData(paired_df.xs('rna', level=1))
     paired_adata.layers['protein'] = paired_df.xs('protein', level=1).values
     paired_adata.layers['protein'][paired_adata.layers['protein'] != paired_adata.layers['protein']] = 0  # these are entries that had no not-nan neighbor
-    paired_adata.obsm = combined[paired_adata.obs.index].obsm.copy()
-    paired_adata.obs = combined[paired_adata.obs.index].obs.copy()
-    paired_adata.uns = combined.uns
+    paired_adata.obsm = {k: v for k, v in combined[paired_adata.obs.index].obsm.items() if k in ['X_glue', 'X_umap']}
+    paired_adata.obs = combined[paired_adata.obs.index].obs[['dpt_pseudotime', 'cell_type', 'domain']].copy()
+    paired_adata.uns = {k: v for k, v in combined.uns.items() if k in ['cell_type_colors', 'domain_colors', 'neighbors']}
 
     paired_adata.X = np.array(paired_adata.X)
     paired_adata.layers['rna'] = paired_adata.X
@@ -136,26 +162,17 @@ def pair_data(
     prot = prot[:, adata.var_names]
     rna = rna[:, adata.var_names]
 
-    # smoothed_protein only for protein cells
-    a = np.nan * np.zeros(adata.shape)
-    prot_obs = [vn for vn in adata.obs_names if vn in prot.obs_names]
-    a[[vn in prot.obs_names for vn in adata.obs_names], :] = prot[prot_obs].layers['smoothed']
-    adata.layers['smoothed'] = a.copy()
-
     # scale all features by 1 / (75% quantile - 25% quantile) to give them the same weight in the likelihood function
-    adata.layers['smoothed_rna'] = adata.layers['rna'].copy()
-    layer = 'smoothed_rna'
+    layer = 'rna'
     quantiles25 = np.quantile(adata.layers[layer], q=.25, axis=0)
     quantiles75 = np.quantile(adata.layers[layer], q=.75, axis=0)
     adata.layers[layer] = adata.layers[layer] / (quantiles75 - quantiles25)
     adata.var['scaling_rna'] = (quantiles75 - quantiles25)
 
-    adata.layers['smoothed_protein'] = adata.layers['protein'].copy()
-    layer = 'smoothed_protein'
+    layer = 'protein'
     quantiles25 = np.quantile(adata.layers[layer], q=.25, axis=0)
     quantiles75 = np.quantile(adata.layers[layer], q=.75, axis=0)
     adata.layers[layer] = adata.layers[layer] / (quantiles75 - quantiles25)
-    adata.layers['smoothed'] = adata.layers['smoothed'] / (quantiles75 - quantiles25)
     adata.var['scaling_prot'] = (quantiles75 - quantiles25)
 
     sc.pp.neighbors(adata, use_rep='X_glue')

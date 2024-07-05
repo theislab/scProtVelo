@@ -2,6 +2,19 @@ import numpy as np
 
 
 def add_fits_branches(adata, vae, n_samples=100):
+    """
+    Add model fit information to the adata object.
+
+    Parameters
+    ----------
+    adata
+        The adata object to evaluate the model on.
+    vae
+        The trained scProtVelo model.
+    n_samples
+        Number samples to be used to obtain a likelihood value.
+    """
+
     import torch.nn.functional as F
 
     states = vae.module.px_pi_global  # genes x state (up or down)

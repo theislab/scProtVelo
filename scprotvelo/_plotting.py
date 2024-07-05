@@ -15,6 +15,34 @@ def plot_phase_portraits(
         start_at_0=False,
         show_linear_fit=False,
 ):
+    """
+    Plot phase portraits and model fits.
+
+    Parameters
+    ----------
+    adata
+        The adata containing model fits.
+    genes
+        Genes to plot in separate panels.
+    n_cols
+        Number columns to use for the subplots.
+    figsize
+        Figure size.
+    rna_layer
+        Layer to use for rna expression.
+    protein_layer
+        Layer to use for protein expression.
+    hue
+        Obs label to plot on the cells.
+    axes_label
+        X and Y axis labels.
+    save
+        Filename to save to, if 'None' the plot will not be saved.
+    start_at_0
+        Whether to start the x and y axis at 0.
+    show_linear_fit
+        Whether to include a linear fit.
+    """
     if not isinstance(genes, list):
         genes = [genes]
 
@@ -42,8 +70,8 @@ def plot_phase_portraits(
         # plot linear fit in log-log space
         if show_linear_fit:
             import numpy as np
-            loged_rna = adata[:, gene].layers['smoothed_rna_log']
-            rna = adata[:, gene].layers['smoothed_rna']
+            loged_rna = adata[:, gene].layers['rna_log']
+            rna = adata[:, gene].layers['rna']
             prot = np.exp(loged_rna * adata.var.loc[gene]['slope'] + adata.var.loc[gene]['intercept']) - 1
             ax_curr.scatter(prot, rna, color="black", s=.5)
 

@@ -1,5 +1,5 @@
 .idea/
-data
+/data/data_raw
 notebooks/figures
 notebooks/results.csv
 
@@ -139,4 +139,3 @@ dmypy.json
 # vscode
 .vscode/settings.json
 docs/api/reference/
-*.h5ad

@@ -599,6 +599,24 @@ class scProtVelo(VELOVI):
         time_prior=None,
         **model_kwargs,
     ):
+        """
+        Parameters
+        ----------
+        adata
+            Adata object used to fit protein velocity on.
+        n_hidden
+            Number of nodes per hidden layer.
+        n_latent
+            Dimensionality of the latent space.
+        n_layers
+            Number of hidden layers used for encoder and decoder NNs.
+        linear_decoder
+            Whether to use a linear decoder or not.
+        time_prior
+            (Optional) Obs name containing time annotations to be used as prior.
+        **model_kwargs
+            Additional kwargs used to initialize the model.
+        """
         super().__init__(adata)
         self.n_latent = n_latent
 
@@ -675,21 +693,22 @@ class scProtVelo(VELOVI):
             rna_layer: str,
             time_prior=None,
             **kwargs,
-    ) -> Optional[AnnData]:
+    ):
         """
-        %(summary)s.
         Parameters
         ----------
-        %(param_adata)s
+        adata
+            Adata object used to fit protein velocity on.
         protein_layer
-            Layer in adata with normalized protein expression
+            Layer name for protein values.
         rna_layer
-            Layer in adata with normalized mRNA expression
-
-        Returns
-        -------
-        %(returns)s
+            Layer name for rna values.
+        time_prior
+            (Optional) Obs name containing time annotations to be used as prior.
+        **kwargs
+            Additional kwargs used to register fields.
         """
+
         setup_method_args = cls._get_setup_method_args(**locals())
         anndata_fields = [
             LayerField(REGISTRY_KEYS.X_KEY, protein_layer, is_count_data=False),
