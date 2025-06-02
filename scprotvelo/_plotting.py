@@ -14,6 +14,9 @@ def plot_phase_portraits(
         save=None,
         start_at_0=False,
         show_linear_fit=False,
+        rasterize=True,
+        dpi=300,
+        gene_font_size=8,
 ):
     """
     Plot phase portraits and model fits.
@@ -53,7 +56,7 @@ def plot_phase_portraits(
     else:
         n_rows = ((n_genes - 1) // n_cols) + 1
 
-    fig, ax = plt.subplots(n_rows, n_cols, figsize=(figsize[0] * n_cols, figsize[1] * n_rows), dpi=100)
+    fig, ax = plt.subplots(n_rows, n_cols, figsize=(figsize[0] * n_cols, figsize[1] * n_rows), dpi=dpi)
     plt.subplots_adjust(wspace=0, hspace=0)
 
     palette = dict(zip(adata.obs[hue].cat.categories, adata.uns[f'{hue}_colors']))
@@ -65,7 +68,7 @@ def plot_phase_portraits(
         rna = adata[:, gene].layers[rna_layer].squeeze()
         protein = adata[:, gene].layers[protein_layer].squeeze()
         hue_vec = adata.obs[hue].values
-        sns.scatterplot(x=protein, y=rna, hue=hue_vec, s=10, ax=ax_curr, palette=palette)
+        sns.scatterplot(x=protein, y=rna, hue=hue_vec, s=10, ax=ax_curr, palette=palette, rasterized=rasterize)
 
         # plot linear fit in log-log space
         if show_linear_fit:
@@ -73,16 +76,16 @@ def plot_phase_portraits(
             loged_rna = adata[:, gene].layers['rna_log']
             rna = adata[:, gene].layers['rna']
             prot = np.exp(loged_rna * adata.var.loc[gene]['slope'] + adata.var.loc[gene]['intercept']) - 1
-            ax_curr.scatter(prot, rna, color="black", s=.5)
+            ax_curr.scatter(prot, rna, color="black", s=.5, rasterized=rasterize)
 
         # plot fitted data
         rna = adata[:, gene].layers['rna_predicted']
         protein = adata[:, gene].layers['protein_predicted']
-        ax_curr.scatter(protein, rna, color="black", s=3, alpha=1)
-        ax_curr.scatter(protein, rna, color="white", s=.5, alpha=1)
+        ax_curr.scatter(protein, rna, color="black", s=3, alpha=1, rasterized=rasterize)
+        ax_curr.scatter(protein, rna, color="white", s=.5, alpha=1, rasterized=rasterize)
 
         ax_curr.legend().remove()
-        ax_curr.set_title(gene)
+        ax_curr.set_title(gene, fontsize=gene_font_size)
 
         if start_at_0:
             ax_curr.set_ylim(bottom=0)
@@ -91,11 +94,11 @@ def plot_phase_portraits(
         if i % n_cols != 0:
             ax_curr.set_ylabel('')
         else:
-            ax_curr.set_ylabel(axes_label[1])
+            ax_curr.set_ylabel(axes_label[0])
         if i // n_cols != n_rows - 1:
             ax_curr.set_xlabel('')
         else:
-            ax_curr.set_xlabel(axes_label[0])
+            ax_curr.set_xlabel(axes_label[1])
 
     plt.tight_layout()
     if save is not None:
