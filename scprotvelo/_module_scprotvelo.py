@@ -302,6 +302,8 @@ class VELOVAE(BaseModuleClass):
         self.flexible_switch_time = flexible_switch_time
         self.shared_time = shared_time
 
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         n_genes = n_input * 2
 
         self.gamma_mean_unconstr = torch.nn.Parameter(-1 * torch.ones(n_input, 2))
@@ -315,8 +317,8 @@ class VELOVAE(BaseModuleClass):
         self.switch_time_ss_down_unconstr = torch.nn.Parameter(.2 * torch.ones(n_input))
 
         if self.use_time_prior:
-            self.dpt_start_rna = torch.from_numpy(dpt_start_rna).cuda()
-            self.dpt_start_prot = torch.from_numpy(dpt_start_prot).cuda()
+            self.dpt_start_rna = torch.from_numpy(dpt_start_rna).to(device)
+            self.dpt_start_prot = torch.from_numpy(dpt_start_prot).to(device)
         else:
             self.dpt_start_rna = None
             self.dpt_start_prot = None
@@ -328,10 +330,10 @@ class VELOVAE(BaseModuleClass):
         # for now, with normal dist, this is just the variance
         self.scale_unconstr = torch.nn.Parameter(-1 * torch.ones(n_genes, 2))
 
-        self.upper_ss_prot = torch.from_numpy(upper_ss_prot).cuda()
-        self.lower_ss_prot = torch.from_numpy(lower_ss_prot).cuda()
-        self.upper_ss_rna = torch.from_numpy(upper_ss_rna).cuda()
-        self.lower_ss_rna = torch.from_numpy(lower_ss_rna).cuda()
+        self.upper_ss_prot = torch.from_numpy(upper_ss_prot).to(device)
+        self.lower_ss_prot = torch.from_numpy(lower_ss_prot).to(device)
+        self.upper_ss_rna = torch.from_numpy(upper_ss_rna).to(device)
+        self.lower_ss_rna = torch.from_numpy(lower_ss_rna).to(device)
 
         self.lower_start_rna = torch.nn.Parameter(self.lower_ss_rna.clone())
         self.lower_start_prot = torch.nn.Parameter(self.lower_ss_prot.clone())
@@ -763,7 +765,10 @@ class VeloVAEPaired(VELOVAE):
         loss *= 100
 
         loss_recoder = LossOutput(
-            loss, reconst_loss, self.kl_z_scaling * kl_divergence_z, torch.tensor(global_loss)
+            loss=loss,
+            reconstruction_loss=reconst_loss,
+            kl_local=self.kl_z_scaling * kl_divergence_z,
+            kl_global=torch.tensor(global_loss),
         )
 
         return loss_recoder

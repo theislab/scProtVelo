@@ -545,6 +545,9 @@ class VELOVI(VAEMixin, UnsupervisedTrainingMixin, BaseModelClass):
             gene_mask = [True if gene in gene_list else False for gene in all_genes]
 
         rls = []
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         for tensors in scdl:
             minibatch_samples = []
             for _ in range(n_samples):
@@ -555,11 +558,14 @@ class VELOVI(VAEMixin, UnsupervisedTrainingMixin, BaseModelClass):
                 protein = tensors[REGISTRY_KEYS.X_KEY]
                 rna = tensors[REGISTRY_KEYS.U_KEY]
 
+                protein = protein.to(device)
+                rna = rna.to(device)
+
                 mixture_dist_s = generative_outputs["mixture_dist_s"]
                 mixture_dist_u = generative_outputs["mixture_dist_u"]
 
-                reconst_loss_s = -mixture_dist_s.log_prob(protein.cuda())
-                reconst_loss_u = -mixture_dist_u.log_prob(rna.cuda())
+                reconst_loss_s = -mixture_dist_s.log_prob(protein.to(device))
+                reconst_loss_u = -mixture_dist_u.log_prob(rna.to(device))
                 output = -(reconst_loss_s + reconst_loss_u)
                 output = output[..., gene_mask]
                 output = output.cpu().numpy()
