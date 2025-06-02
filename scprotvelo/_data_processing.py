@@ -15,6 +15,10 @@ def pair_data(
         n_cells=50,
         log_fc_prot=.1,
         log_fc_rna=.5,
+        recompute_pseudotime=False,
+        dim_for_recompute_pseudotime=2,
+        direction_for_recompute_pseudotime='max',
+        keep_cts=None,
 ):
     """
     Create computationally paired data by interpolating the missing modality over an integrated neighborhood graph.
@@ -51,6 +55,11 @@ def pair_data(
     prot = prot[prot.obs['leiden'].isin(cluster_list)].copy()
     rna = rna[rna.obs['leiden'].isin(cluster_list)].copy()
     combined = combined[combined.obs['leiden'].isin(cluster_list)].copy()
+
+    if keep_cts is not None:
+        prot = prot[prot.obs['cell_type'].isin(keep_cts)].copy()
+        rna = rna[rna.obs['cell_type'].isin(keep_cts)].copy()
+        combined = combined[combined.obs['cell_type'].isin(keep_cts)].copy()
 
     sc.pl.umap(combined, color=['cell_type', 'dpt_pseudotime', 'leiden'])
 
@@ -182,6 +191,16 @@ def pair_data(
         print(f'{domain}: {count} cells')
     print()
 
+    if recompute_pseudotime:
+        sc.tl.diffmap(adata)
+        if direction_for_recompute_pseudotime == 'max':
+            m = np.argmax(adata.obsm['X_diffmap'][:, dim_for_recompute_pseudotime])
+        else:
+            m = np.argmin(adata.obsm['X_diffmap'][:, dim_for_recompute_pseudotime])
+        adata.uns['iroot'] = m
+        sc.tl.dpt(adata)
+
+
     de_genes = _select_variable_genes(
         prot,
         rna,
@@ -245,9 +264,12 @@ def _de_genes(adata, fractions, n_cells, log_fc):
     adata_low = adata_low[rand_ind]
     adata_high = adata_high[rand_ind]
 
-    p_vals = ttest_ind(adata_low.X, adata_high.X, nan_policy='omit')[1]
+    p_vals = ttest_ind(adata_low.X, adata_high.X, nan_policy='omit')[1] # might contain nan e.g. when all values of a gene are 0
+    p_vals = np.array(p_vals).flatten()
+    valid_mask = np.isfinite(p_vals)
+    p_vals_corrected = np.full_like(p_vals, np.nan)
+    p_vals_corrected[valid_mask] = multipletests(p_vals[valid_mask], alpha=0.05, method="fdr_bh")[1]
 
-    p_vals_corrected = multipletests(p_vals, alpha=0.05, method="fdr_bh")[1]
     fc = np.nanmean(adata_high.X, axis=0) / np.nanmean(adata_low.X, axis=0)
     logfc = np.log(fc)
 
