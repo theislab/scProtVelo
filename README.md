@@ -1,5 +1,5 @@
 # scProtVelo
-Development branch to scProtVelo compatible with paired data.
+Development branch to make scProtVelo compatible with paired data.
 
 ##
 `scProtVelo` is a Python package for modeling translation dynamics from paired single-cell mRNA + mass spectrometry-based protein expression data.
