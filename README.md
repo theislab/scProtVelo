@@ -1,4 +1,7 @@
 # scProtVelo
+Development branch to scProtVelo compatible with paired data.
+
+##
 `scProtVelo` is a Python package for modeling translation dynamics from paired single-cell mRNA + mass spectrometry-based protein expression data.
 This repository contains the source code for `scProtVelo` as well as data and notebooks to reproduce the results published in https://doi.org/10.1126/science.adr8785. 
 
